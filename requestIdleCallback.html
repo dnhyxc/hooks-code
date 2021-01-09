@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>requestIdleCallback</title>
+</head>
+
+<body>
+  <div>
+    <p id="p1">任务1:</p>
+    <p id="p2">任务2:</p>
+    <p id="p3">任务3:</p>
+  </div>
+  <script>
+    /**
+     * window.requestIdleCallback(callback, { timeout: 1000 });
+     * 这是一个全局属性（挂载在 window 上），用于用户告知浏览器，用户现在执行的 callback 函数，它的优先级比较低，
+     * 此时就需要通过 requestIdleCallback() 来告知浏览器，可以在空闲的时候执行 callback 函数。
+     * 但是如果设置了 timeout 超时时间，那么就不管浏览器是否是空闲的都必须执行 callback 函数。
+     */
+
+    const p1 = document.getElementById('p1');
+    const p2 = document.getElementById('p2');
+    const p3 = document.getElementById('p3');
+
+    function sleep(delay) {
+      /**
+       * 在 JS 里实现睡眠功能：
+       * 如果 Date.now() - start 小于等于 delay 则什么都不做，即不会跳出 for 循环，该函数执行就不会结束。
+       * 如果 Date.now() - start 大于 delay，则会跳出 for 循环，该函数也就执行结束了，会继续依次执行下面的代码。
+       */
+      for (var start = Date.now(); Date.now() - start <= delay;) {}
+    }
+
+    const works = [
+      () => {
+        console.log('第一个任务开始执行');
+        p1.innerHTML = '第1个任务开始执行';
+        sleep(20);
+        console.log('第一个任务执行完成')
+        p1.innerHTML = '第1个任务执行完成';
+      },
+      () => {
+        console.log('第二个任务开始执行');
+        p2.innerHTML = '第2个任务开始执行';
+        sleep(20);
+        console.log('第二个任务执行完成')
+        p2.innerHTML = '第2个任务开始执行';
+      },
+      () => {
+        console.log('第三个任务开始执行');
+        p3.innerHTML = '第3个任务开始执行';
+        sleep(20);
+        console.log('第三个任务执行完成')
+        p3.innerHTML = '第3个任务开始执行';
+      },
+    ]
+
+    requestIdleCallback(workLoop, {
+      timeout: 1000
+    });
+
+    /**
+     * deadline 是一个对象，有两个属性：
+     * - timeRemaining()：可以返回此帧还剩多少时间供用户使用。
+     * - didTimeout：返回此 callback 任务是否超时。
+     */
+    function workLoop(deadline) {
+      console.log(`本帧的剩余时间为${parseInt(deadline.timeRemaining())}`);
+      // 如果此帧的剩余时间超过 0，或者已经超时了，且剩余任务数大于 0，则继续往下执行。
+      // 如果没有剩余时间了，就需要放弃执行任务控制权，将控制权交还给浏览器
+      while ((deadline.timeRemaining() > 0 || deadline.didTimeout) && works.length > 0) {
+        performUnitOfWork();
+      }
+
+      // 如果还有任务没执行，则继续递归执行 requestIdleCallback()
+      if (works.length > 0) {
+        requestIdleCallback(workLoop, {
+          timeout: 1000
+        });
+      }
+    }
+
+    function performUnitOfWork() {
+      works.shift()();
+    }
+  </script>
+</body>
+
+</html>

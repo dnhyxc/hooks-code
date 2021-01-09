@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RequestAnimationFrame</title>
+  <style>
+    .box1 {
+      background-color: skyblue;
+      width: 0;
+      height: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box1" id="progress-bar"></div>
+  <button id="btn">开始</button>
+  <script>
+    let btn = document.getElementById('btn');
+    let oDiv = document.getElementById('progress-bar');
+    let start;
+
+    function progress() {
+      oDiv.style.width = oDiv.offsetWidth + 1 + 'px';
+      oDiv.innerHTML = (oDiv.offsetWidth) + '%';
+      if (oDiv.offsetWidth < 100) {
+        let current = Date.now();
+        // 打印出开始准备执行的时候到真正执行时的时间差
+        console.log(current - start);
+        start = current;
+        requestAnimationFrame(progress);
+      }
+    }
+
+    btn.addEventListener('click', () => {
+      // 每次点击之前先清除原来的宽度
+      oDiv.style.width = 0;
+      let current = Date.now();
+      start = current;
+      requestAnimationFrame(progress);
+    })
+  </script>
+</body>
+
+</html>
