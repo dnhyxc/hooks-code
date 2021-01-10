@@ -12,6 +12,7 @@
     <p id="p1">任务1:</p>
     <p id="p2">任务2:</p>
     <p id="p3">任务3:</p>
+    <p id="p4">任务4:</p>
   </div>
   <script>
     /**
@@ -24,6 +25,7 @@
     const p1 = document.getElementById('p1');
     const p2 = document.getElementById('p2');
     const p3 = document.getElementById('p3');
+    const p4 = document.getElementById('p4');
 
     function sleep(delay) {
       /**
@@ -34,27 +36,33 @@
       for (var start = Date.now(); Date.now() - start <= delay;) {}
     }
 
+
+    const allWorksTime = Date.now();
     const works = [
-      () => {
+      (start) => {
         console.log('第一个任务开始执行');
         p1.innerHTML = '第1个任务开始执行';
         sleep(20);
         console.log('第一个任务执行完成')
-        p1.innerHTML = '第1个任务执行完成';
+        p1.innerHTML = '第1个任务执行完成，' + '执行时间为： ' + (Date.now() - start) + 'ms';
+        console.log("第1个任务执行时间为： " + (Date.now() - start));
       },
-      () => {
+      (start) => {
         console.log('第二个任务开始执行');
         p2.innerHTML = '第2个任务开始执行';
         sleep(20);
         console.log('第二个任务执行完成')
-        p2.innerHTML = '第2个任务开始执行';
+        p2.innerHTML = '第2个任务执行完成，' + '执行时间为： ' + (Date.now() - start) + 'ms';
+        console.log("第2个任务执行时间为： " + (Date.now() - start));
       },
-      () => {
+      (start) => {
         console.log('第三个任务开始执行');
         p3.innerHTML = '第3个任务开始执行';
         sleep(20);
         console.log('第三个任务执行完成')
-        p3.innerHTML = '第3个任务开始执行';
+        p3.innerHTML = '第3个任务执行完成，' + '执行时间为： ' + (Date.now() - start) + 'ms';
+        console.log("第3个任务执行时间为： " + (Date.now() - start));
+        p4.innerHTML = "三个任务执行总时间为： " + (Date.now() - allWorksTime) + 'ms';
       },
     ]
 
@@ -84,7 +92,8 @@
     }
 
     function performUnitOfWork() {
-      works.shift()();
+      const start = Date.now();
+      works.shift()(start);
     }
   </script>
 </body>

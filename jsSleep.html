@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sleep</title>
+</head>
+
+<body>
+  <script>
+    function sleep(d) {
+      for (var start = Date.now(); Date.now() - start <= d;) {
+        console.log('处于睡眠中...');
+      }
+    }
+
+    function work() {
+      const start = Date.now();
+      console.log('开始搬砖了~~~');
+      sleep(18);
+      console.log('开始干饭了~~~')
+      console.log(parseFloat(Date.now() - start));
+    }
+
+    work();
+  </script>
+</body>
+
+</html>

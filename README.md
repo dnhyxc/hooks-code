@@ -169,3 +169,97 @@
   </script>
 </body>
 ```
+
+### 单链表
+
+1，单链表是一种链式存取的数据结构。
+
+2，链表的数据是以节点来表示的，每个节点的构成为：`元素 + 指针（指向后继元素存储位置）`，元素就是存储数据的存储单元，指针就是连接每个节点的地址。
+
+3，单链表的实现：
+
+```html
+<body>
+  <div>singleLinkList</div>
+  <script>
+    class Update {
+      // payload：数据或者说是元素
+      constructor(payload, nextUpdate) {
+        this.payload = payload;
+        // nextUpdate：指向下一节点的指针
+        this.nextUpdate = nextUpdate;
+      }
+    }
+
+    const update = new Update({
+      name: 'aaa'
+    })
+    console.log(update); // {payload: {name: 'aaa'}, nextUpdate: undefined}
+
+    // 将数据串联起来形成链表结构
+    class UpdateQueue {
+      constructor() {
+        // 原状态
+        this.baseState = null;
+        // 第一个更新
+        this.firstUpdate = null;
+        // 最后一个更新
+        this.lastUpdate = null;
+      }
+
+      enqueueUpdate(update) {
+        console.log(update); // { payload: { name: 'dnhyxc' }, nextUpdate: undefined }...
+        if (this.firstUpdate == null) {
+          this.firstUpdate = this.lastUpdate = update;
+        } else {
+          this.lastUpdate.nextUpdate = update;
+          this.lastUpdate = update;
+        }
+      }
+
+      // 获取老状态，然后遍历这个链表，进行更新
+      forceUpdate() {
+        // 初始状态
+        let currentState = this.baseState || {};
+        // 当前更新
+        let currentUpdate = this.firstUpdate;
+        while (currentUpdate) {
+          let nextState = typeof currentUpdate.payload === 'function' ?
+            currentUpdate.payload(currentState) :
+            currentUpdate.payload;
+          // 使用新状态替换老的状态
+          currentState = {
+            ...currentState,
+            ...nextState
+          };
+          // 找下一个节点
+          currentUpdate = currentUpdate.nextUpdate;
+        }
+        // 更新完成之后将链表清空
+        this.firstUpdate = this.lastUpdate = null;
+        this.baseState = currentState;
+        // 将最新的状态返回
+        return currentState;
+      }
+    }
+
+    // 以实现一个计数器为例：{number: 0}  setState({number: 1}) setState((state) => ({number: state.number + 1}))
+    let queue = new UpdateQueue();
+    queue.enqueueUpdate(new Update({
+      name: 'dnhyxc'
+    }));
+    queue.enqueueUpdate(new Update({
+      number: 0
+    }));
+    queue.enqueueUpdate(new Update(state => ({
+      number: state.number + 1
+    })));
+    queue.enqueueUpdate(new Update(state => ({
+      number: state.number + 1
+    })));
+    const res = queue.forceUpdate();
+    console.log(res); // { name: 'dnhyxc', number: 2 }
+    console.log(queue.baseState); // { name: 'dnhyxc', number: 2 }
+  </script>
+</body>
+```
