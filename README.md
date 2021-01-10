@@ -1,4 +1,4 @@
-## 浏览器基础
+## Fiber 学习基础
 
 ### 屏幕刷新率
 
@@ -263,3 +263,132 @@
   </script>
 </body>
 ```
+
+## Fiber 历史
+
+### Fiber 之间的协调
+
+1，React 会递归比对 VirtualDOM 树，找出需要变动的节点，然后同步更新它们，这个过程 React 称为 Reconcilation(协调)。
+
+2，在 Reconcilation 期间，React 会一直占用着浏览器资源，一则会导致用户触发的事件得不到响应，二则导致掉帧，用户可能会感觉到卡顿。
+
+3，fiber 之前遍历 VDOM 的方式：
+
+```js
+/**
+ * fiber 之前是什么样的，为什么需要 fiber？
+ *  - 因为 fiber 之前是使用的 递归调用，而递归调用不能中断。
+ *  - 执行栈越来越深，会影响性能，造成卡顿等不良影响。
+ * 以下代码这种遍历是递归调用，执行栈会越来越深，而且不能中断，因为中断后再想恢复就非常难了
+ */
+
+let root = {
+  key: 'A1',
+  children: [
+    {
+      key: 'B1',
+      children: [
+        { key: 'C1', children: [] },
+        { key: 'C2', children: [] }
+      ]
+    },
+    {
+      key: 'B2',
+      children: []
+    }
+  ]
+}
+
+function walk(vdom) {
+  doWork(vdom);
+  vdom.children.forEach((child) => {
+    walk(child);
+  })
+}
+
+function doWork(vdom) {
+  console.log(vdom.key);  // A1 => B1 => C1 => C2 => B2
+}
+
+walk(root);
+```
+
+### Fiber 是什么
+
+1，我们可以通过某些调度策略合理分配 CPU 资源，从而提高用户的响应速度。
+
+2，通过 Fiber 架构，让自己的 Reconcilation 过程变成可中断，适时的让出 CPU 执行权，除了可以让浏览器及时地响应用户的交互。
+
+### Fiber 是一个执行单元
+
+1，Fiber 是一个执行单元，每次执行完一个执行单元，React 就会检查现在还剩多少时间，如果没有时间就将控制权让出去。
+
+2，Fiber 执行过程图如下：
+
+![Fiber](./image/fiber执行过程.jpg)
+
+### Fiber 是一种数据结构
+
+1，React 目前的做法是使用链表，每个 VirtualDOM 节点内部表示为一个 Fiber。
+
+![Fiber](./image/Fiber%20链表数据结构.png)
+
+```js
+type Fiber = {
+  // 类型
+  type: any;
+  // 父节点
+  return: Fiber,
+  // 指向第一个子节点
+  child: Fiber,
+  // 指向下一个弟弟
+  sibling: Fiber
+}
+```
+
+### Fiber 执行阶段
+
+1，每次渲染有两个阶段：Reconciliation（协调 / render 阶段）和 Commit（提交阶段）。
+
+2，协调阶段：可以认为是 Diff 阶段，这个阶段可以被中断，这个阶段会找出所有节点变更，例如节点新增、删除、属性变更等等，这些变更 React 称之为副作用（Effect）。
+
+3，提交阶段：将上一个阶段计算出来的需要处理的副作用（Effect）一次性执行了，`这个阶段必须同步执行，不能被打断`。
+
+### render 阶段
+
+1，render 阶段会构建 fiber 树。
+
+### element.js
+
+1，构建节点：
+
+```js
+let A1 = { type: 'div', key: 'A1' }
+let B1 = { type: 'div', key: 'B1', return: A1 }
+let B2 = { type: 'div', key: 'B2', return: A1 }
+let C1 = { type: 'div', key: 'C1', return: B1 }
+let C2 = { type: 'div', key: 'C2', return: B1 }
+
+A1.child = B1;
+B1.sibling = B2;
+B1.child = C1;
+C1.sibling = C2;
+
+module.exports = A1;
+```
+
+### render.js
+
+1，遍历时先从顶点开始遍历。
+
+2，如果有第一个儿子，先遍历第一个儿子。
+
+3，如果没有第一个儿子，标志着此节点遍历完成。
+
+4，如果有弟弟则遍历弟弟。
+
+5，如果没有下一个弟弟，返回父节点，表示完成父节点遍历，如果有叔叔则先遍历叔叔，在返回父节点。
+
+6，没有父节点则遍历结束。
+
+![Fiber](./image/fiber遍历规则.png)
