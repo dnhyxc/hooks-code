@@ -1,7 +1,6 @@
 /**
  * render 是要把一个元素渲染到一个容器内部
  */
-
 import { TAG_ROOT } from './constants';
 import { scheduleRoot } from './scheduleRoot';
 

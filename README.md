@@ -443,6 +443,7 @@ function workLoop(deadline) {
  *  此时返回当前fiber的父节点。
  */
 
+// 用于构建Fiber树
 function performUnitOfWork(fiber) {
   // 处理此fiber
   beginWork(fiber);
@@ -463,6 +464,7 @@ function performUnitOfWork(fiber) {
   }
 }
 
+// 表示当前fiber构建结束
 function completeUnitOfWork(fiber) {
   console.log('结束：' + fiber.key);  // C1 => C2 => B1 => B2 => A1
 }

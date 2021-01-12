@@ -28,6 +28,8 @@ function workLoop(deadline) {
   // 是否要让出时间片或者说控制权
   let shouldYield = false;
   while (nextUnitOfWork && !shouldYield) {
+    // A1(元素) => A1(文本节点) => B1(元素) => B1(文本节点) => C1(文本节点) => C2(文本节点) => B2(元素) => B1(文本节点)
+    // console.log(nextUnitOfWork, 'nextUnitOfWork');
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
     // 执行完一个任务后，没有时间的话就要让出控制权
     shouldYield = deadline.timeRemaining() < 1;
@@ -41,6 +43,10 @@ function workLoop(deadline) {
   requestIdleCallback(workLoop, { timeout: 500 });
 }
 
+// 递归遍历element中的所有节点，创建Fiber树
+/**
+ * element => A1（文本）=> B1（元素）=> B1（文本）=> C1（元素）=> C1（文本）=> C2（元素）=> C2（文本）
+ */
 function performUnitOfWork(currentFiber) {
   beginWork(currentFiber);
   if (currentFiber.child) {
@@ -65,7 +71,7 @@ function performUnitOfWork(currentFiber) {
 * 2，创建子fiber
 */
 
-// 创建fiber
+// 循环调用beginWork，为每个Fiber添加tag，type，props，stateNode，父Fiber，副作用表示及标识出每个fiber的nextEffent
 function beginWork(currentFiber) {
   if (currentFiber.tag === TAG_ROOT) {
     updateHostRoot(currentFiber);
@@ -77,13 +83,28 @@ function beginWork(currentFiber) {
 }
 
 function updateHostRoot(currentFiber) {
+  console.log(currentFiber.props, 'props');
   // 先处理自己，如果是一个原生节点，创建真实DOM。再创建子fiber
   // currentFiber：当前所处理的fiber。newChildren：当前所处理的fiber的子节点
-  let newChildren = currentFiber.props.children;  // [element]
+  let newChildren = currentFiber.props.children;  // [element] => B1（元素的子元素）
   reconcileChildren(currentFiber, newChildren);
 }
 
-// 处理element根节点的子元素，如：A1，B1，B2 
+/**
+ * 最先进入的为B1（元素）
+ * => C1（元素）
+ */
+function updateHost(currentFiber) {
+  // 如果此fiber的stateNode为空，则说明还没有创建DOM节点
+  if (!currentFiber.stateNode) {
+    currentFiber.stateNode = createDOM(currentFiber);
+  }
+  // 处理当前currentFiber的子节点 
+  const newChildren = currentFiber.props.children;  // B1（文本）=> C1（元素）=> C2（元素）
+  reconcileChildren(currentFiber, newChildren);
+}
+
+// 处理element根节点的子元素，如：A1（文本），B1（元素），B2（元素）
 function reconcileChildren(currentFiber, newChildren) {
   // 新子节点的索引
   let newChildIndex = 0;
@@ -93,6 +114,7 @@ function reconcileChildren(currentFiber, newChildren) {
   while (newChildIndex < newChildren.length) {
     // 取出虚拟DOM节点
     let newChild = newChildren[newChildIndex];
+    console.log(newChild, 'newChild');
     let tag;
     if (newChild.type === ELEMENT_TEXT) {
       tag = TAG_TEXT; // 如果是一个文本节点，则tag为TAG_TEXT
@@ -111,6 +133,8 @@ function reconcileChildren(currentFiber, newChildren) {
       nextEffect: null, // effect list也是一个单链表
       // effect list的顺序和节点遍历完成顺序是一样的，但是节点只放那些有变化的fiber节点（出钱的人），没有变化的将会绕过
     }
+
+    console.log(newFiber);
 
     // 遍历构建的Fiber，其中最小的儿子是没有弟弟的，此时遍历也就结束了
     if (newFiber) {
@@ -136,6 +160,7 @@ function updateHostText(currentFiber) {
   }
 }
 
+// 创建DOM节点
 function createDOM(currentFiber) {
   // 如果是一个文本节点
   if (currentFiber.tag === TAG_TEXT) {
@@ -148,18 +173,7 @@ function createDOM(currentFiber) {
   }
 }
 
-function updateHost(currentFiber) {
-  // 如果此fiber的stateNode为空，则说明还没有创建DOM节点
-  if (!currentFiber.stateNode) {
-    currentFiber.stateNode = createDOM(currentFiber);
-  }
-  // 处理当前currentFiber的子节点 
-  const newChildren = currentFiber.props.children;
-  reconcileChildren(currentFiber, newChildren);
-}
-
 function updateDOM(stateNode, oldProps, newProps) {
-  console.log(stateNode, 'updateDOM---stateNode')
   setProps(stateNode, oldProps, newProps);
 }
 
@@ -174,13 +188,33 @@ function updateDOM(stateNode, oldProps, newProps) {
  *  - lastEffect => 三儿子
  */
 
+// 创建副作用链，用于更新页面显示
+/**
+ * currentFiber:
+ * A1（文本）=> B1（文本）=> C1（文本）=> C1（元素）=> C2（文本）=> C2（元素）
+ */
 function completeUnitOfWork(currentFiber) {
   // 找出第一个完成的currentFiber的父元素
-  let returnFiber = currentFiber.return;
+  /**
+   * A1（元素）=> B1（元素）=> C1（元素）=> B1（元素）=> C2（元素）=> B1（元素）
+   */
+  let returnFiber = currentFiber.return; 
   if (returnFiber) {
+    // 把自己挂到自己的父亲身上
+    const effectTag = currentFiber.effectTag;
+    // 判断自己是否有副作用，如果有就让父亲的first/lastEffect都指向自己
+    if (effectTag) {
+      if (returnFiber.lastEffect) {
+        returnFiber.lastEffect.nextEffext = currentFiber; 
+      } else {
+        returnFiber.firstEffect = currentFiber;
+      }
+      returnFiber.lastEffect = currentFiber; 
+    }
+
     // 将自己儿子的effect链挂载到父亲身上（即将儿子挂到儿子的爷爷身上）
     if (!returnFiber.firstEffect) {
-      // 让如父亲的firstEffect指向自己的firstEffect
+      // 让父亲的firstEffect指向自己的firstEffect
       returnFiber.firstEffect = currentFiber.firstEffect;
     }
     if (currentFiber.lastEffect) {
@@ -189,24 +223,12 @@ function completeUnitOfWork(currentFiber) {
       }
       returnFiber.lastEffect = currentFiber.lastEffect;
     }
-
-    // 把自己挂到自己的父亲身上
-    const effectTag = currentFiber.effectTag;
-    // 判断自己是否有副作用，如果有就让父亲的first/lastEffect都指向自己
-    if (effectTag) {
-      if (returnFiber.lastEffect) {
-        returnFiber.lastEffect.nextEffext = currentFiber;
-      } else {
-        returnFiber.firstEffect = currentFiber;
-      }
-      returnFiber.lastEffect = currentFiber;
-    }
   }
 }
 
+// 将虚拟DOM渲染到页面上
 function commitRoot() {
   let currentFiber = workInProgressRoot.firstEffect;
-  console.log(workInProgressRoot.firstEffect);
   while (currentFiber) {
     commitWork(currentFiber);
     currentFiber = currentFiber.nextEffect;
@@ -215,14 +237,13 @@ function commitRoot() {
 }
 
 function commitWork(currentFiber) {
-  console.log(currentFiber.stateNode, 'commitWork------currentFiber');
   if (!currentFiber) return;
   let returnFiber = currentFiber.return;
   let returnDOM = returnFiber.stateNode;
   if (currentFiber.effectTag === PLACEMENT && currentFiber.stateNode && returnDOM) {
     returnDOM.appendChild(currentFiber.stateNode);
   }
-  // currentFiber.effectTag = null;
+  currentFiber.effectTag = null;
 }
 
 /**
@@ -231,3 +252,10 @@ function commitWork(currentFiber) {
  * 这其中有一个优先级的概念，expirationTime
  */
 requestIdleCallback(workLoop, { timeout: 500 });
+
+/**
+ * Fiber 执行顺序：
+ * beginWork()依次建立Fiber节点并建立DOM元素。
+ * completeUnitOfWork()建立Fiber副作用链，收集副作用
+ * commitRoot()按照effect链将虚拟DOM渲染到页面上
+ */

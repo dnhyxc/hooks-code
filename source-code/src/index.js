@@ -4,16 +4,28 @@ import ReactDOM from './react-dom';
 const style = { border: '2px solid pink', margin: '5px', textAlign: 'center' }
 
 const element = (
-  <div id='A1' style={style}>
-    A1
+  <div id='A1' className='AA' style={style}>
+    A
     <div id='B1' style={style}>
-      B1
-      <div id='C1' style={style}>C1</div>
-      <div id='C2' style={style}>C2</div>
+      B
+      <div id='C1' style={style}>
+        c
+      </div>
+      <div id='C2' style={style}>
+        C
+      </div>
     </div>
-    <div id='B2'>B2</div>
+    <div id='B2'>
+      D
+    </div>
   </div>
 );
+
+ReactDOM.render(
+  element,
+  document.getElementById('root')
+);
+
 
 /*
  * const element = React.createElement(
@@ -35,24 +47,24 @@ const element = (
  *       {
  *         id: "C1",
  *         style: style
- *       }, "C1"),
+ *       },
+ *       "C1"
+ *     ),
  *     React.createElement(
  *       "div",
  *       {
  *         id: "C2",
  *         style: style
- *       }, "C2")),
+ *       },
+ *       "C2"
+ *      )
+ *   ),
  *   React.createElement(
  *     "div",
  *     {
  *       id: "B2"
- *     }, "B2")
+ *     },
+ *   "B2"
+ *   )
  * );
 */
-
-console.log(element);
-
-ReactDOM.render(
-  element,
-  document.getElementById('root')
-);
