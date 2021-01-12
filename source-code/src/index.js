@@ -1,5 +1,5 @@
 import React from './react';
-import ReactDOM from 'react-dom';
+import ReactDOM from './react-dom';
 
 const style = { border: '2px solid pink', margin: '5px', textAlign: 'center' }
 
@@ -14,6 +14,41 @@ const element = (
     <div id='B2'>B2</div>
   </div>
 );
+
+/*
+ * const element = React.createElement(
+ *   "div",
+ *   {
+ *     id: "A1",
+ *     style: style
+ *   },
+ *   "A1",
+ *   React.createElement(
+ *     "div",
+ *     {
+ *       id: "B1",
+ *       style: style
+ *     },
+ *     "B1",
+ *     React.createElement(
+ *       "div",
+ *       {
+ *         id: "C1",
+ *         style: style
+ *       }, "C1"),
+ *     React.createElement(
+ *       "div",
+ *       {
+ *         id: "C2",
+ *         style: style
+ *       }, "C2")),
+ *   React.createElement(
+ *     "div",
+ *     {
+ *       id: "B2"
+ *     }, "B2")
+ * );
+*/
 
 console.log(element);
 

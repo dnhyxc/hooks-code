@@ -3,7 +3,7 @@
  */
 
 import { TAG_ROOT } from './constants';
-import scheduleRoot from './scheduleRoot';
+import { scheduleRoot } from './scheduleRoot';
 
 function render(element, container) {
   let rootFiber = {
