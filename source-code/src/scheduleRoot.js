@@ -50,7 +50,6 @@ function workLoop(deadline) {
  * => C1（元素）=> C1（文本）=> C2（元素）=> C2（文本）=> B2（元素）=> B2（文本）
  */
 function performUnitOfWork(currentFiber) {
-  console.log(currentFiber.props, 'performUnitOfWork>>>>>>>>performUnitOfWork');
   beginWork(currentFiber);
   if (currentFiber.child) {
     return currentFiber.child;
@@ -107,7 +106,7 @@ function updateHost(currentFiber) {
   reconcileChildren(currentFiber, newChildren);
 }
 
-// 处理element根节点的子元素，如：A1（文本），B1（元素），B2（元素）
+// newChildren是一个虚拟DOM的数组，将每个虚拟DOM转成Fiber节点
 function reconcileChildren(currentFiber, newChildren) {
   // 新子节点的索引
   let newChildIndex = 0;
@@ -122,11 +121,10 @@ function reconcileChildren(currentFiber, newChildren) {
       console.log('------------------dadasdad-----------------');
       tag = TAG_TEXT; // 如果是一个文本节点，则tag为TAG_TEXT
     } else if (typeof newChild.type === 'string') {
-      console.log('-----------------------------------');
       tag = TAG_HOST; // 如果type是一个字符串，那么就是一个原生的DOM节点
     }
 
-    // 构建 Fiber
+    // 构建 Fiber.
     let newFiber = {
       tag,
       type: newChild.type,  // div
@@ -201,7 +199,6 @@ function completeUnitOfWork(currentFiber) {
    * A1（元素）=> B1（元素）=> C1（元素）=> B1（元素）=> C2（元素）=> B1（元素）
    */
   let returnFiber = currentFiber.return;
-  console.log(returnFiber, 'completeUnitOfWork');
   if (returnFiber) {
     // 把自己挂到自己的父亲身上
     const effectTag = currentFiber.effectTag;
@@ -232,7 +229,6 @@ function completeUnitOfWork(currentFiber) {
 // 将虚拟DOM渲染到页面上
 function commitRoot() {
   let currentFiber = workInProgressRoot.firstEffect;
-  console.log(currentFiber, 'currentFiber');
   while (currentFiber) {
     commitWork(currentFiber);
     currentFiber = currentFiber.nextEffect;

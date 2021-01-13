@@ -5,21 +5,23 @@ const style = { border: '2px solid pink', margin: '5px', textAlign: 'center' }
 
 const element = (
   <div id='A1' className='AA' style={style}>
-    A
+    AA
     <div id='B1' style={style}>
-      B
+      BB
       <div id='C1' style={style}>
-        c
+        CC1
       </div>
       <div id='C2' style={style}>
-        C
+        CC2
       </div>
     </div>
     <div id='B2'>
-      D
+      DD
     </div>
   </div>
 );
+
+console.log(element);
 
 ReactDOM.render(
   element,
