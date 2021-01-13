@@ -45,9 +45,12 @@ function workLoop(deadline) {
 
 // 递归遍历element中的所有节点，创建Fiber树
 /**
- * element => A1（文本）=> B1（元素）=> B1（文本）=> C1（元素）=> C1（文本）=> C2（元素）=> C2（文本）
+ * performUnitOfWork中currentFiber：依次进入顺序
+ * element => A1（元素）=> A1（文本）=> B1（元素）=> B1（文本）
+ * => C1（元素）=> C1（文本）=> C2（元素）=> C2（文本）=> B2（元素）=> B2（文本）
  */
 function performUnitOfWork(currentFiber) {
+  console.log(currentFiber.props, 'performUnitOfWork>>>>>>>>performUnitOfWork');
   beginWork(currentFiber);
   if (currentFiber.child) {
     return currentFiber.child;
@@ -60,6 +63,7 @@ function performUnitOfWork(currentFiber) {
     }
     // 找到父亲，让父亲完成，再找到叔叔
     currentFiber = currentFiber.return; // A1首先完成，返回element根节点
+    // return currentFiber;
   }
 }
 
@@ -83,7 +87,6 @@ function beginWork(currentFiber) {
 }
 
 function updateHostRoot(currentFiber) {
-  console.log(currentFiber.props, 'props');
   // 先处理自己，如果是一个原生节点，创建真实DOM。再创建子fiber
   // currentFiber：当前所处理的fiber。newChildren：当前所处理的fiber的子节点
   let newChildren = currentFiber.props.children;  // [element] => B1（元素的子元素）
@@ -114,11 +117,12 @@ function reconcileChildren(currentFiber, newChildren) {
   while (newChildIndex < newChildren.length) {
     // 取出虚拟DOM节点
     let newChild = newChildren[newChildIndex];
-    console.log(newChild, 'newChild');
     let tag;
     if (newChild.type === ELEMENT_TEXT) {
+      console.log('------------------dadasdad-----------------');
       tag = TAG_TEXT; // 如果是一个文本节点，则tag为TAG_TEXT
     } else if (typeof newChild.type === 'string') {
+      console.log('-----------------------------------');
       tag = TAG_HOST; // 如果type是一个字符串，那么就是一个原生的DOM节点
     }
 
@@ -133,8 +137,6 @@ function reconcileChildren(currentFiber, newChildren) {
       nextEffect: null, // effect list也是一个单链表
       // effect list的顺序和节点遍历完成顺序是一样的，但是节点只放那些有变化的fiber节点（出钱的人），没有变化的将会绕过
     }
-
-    console.log(newFiber);
 
     // 遍历构建的Fiber，其中最小的儿子是没有弟弟的，此时遍历也就结束了
     if (newFiber) {
@@ -198,18 +200,19 @@ function completeUnitOfWork(currentFiber) {
   /**
    * A1（元素）=> B1（元素）=> C1（元素）=> B1（元素）=> C2（元素）=> B1（元素）
    */
-  let returnFiber = currentFiber.return; 
+  let returnFiber = currentFiber.return;
+  console.log(returnFiber, 'completeUnitOfWork');
   if (returnFiber) {
     // 把自己挂到自己的父亲身上
     const effectTag = currentFiber.effectTag;
     // 判断自己是否有副作用，如果有就让父亲的first/lastEffect都指向自己
     if (effectTag) {
       if (returnFiber.lastEffect) {
-        returnFiber.lastEffect.nextEffext = currentFiber; 
+        returnFiber.lastEffect.nextEffect = currentFiber;
       } else {
         returnFiber.firstEffect = currentFiber;
       }
-      returnFiber.lastEffect = currentFiber; 
+      returnFiber.lastEffect = currentFiber;
     }
 
     // 将自己儿子的effect链挂载到父亲身上（即将儿子挂到儿子的爷爷身上）
@@ -219,7 +222,7 @@ function completeUnitOfWork(currentFiber) {
     }
     if (currentFiber.lastEffect) {
       if (returnFiber.lastEffect) {
-        returnFiber.lastEffect.nextEffext = currentFiber.firstEffect;
+        returnFiber.lastEffect.nextEffect = currentFiber.firstEffect;
       }
       returnFiber.lastEffect = currentFiber.lastEffect;
     }
@@ -229,6 +232,7 @@ function completeUnitOfWork(currentFiber) {
 // 将虚拟DOM渲染到页面上
 function commitRoot() {
   let currentFiber = workInProgressRoot.firstEffect;
+  console.log(currentFiber, 'currentFiber');
   while (currentFiber) {
     commitWork(currentFiber);
     currentFiber = currentFiber.nextEffect;
