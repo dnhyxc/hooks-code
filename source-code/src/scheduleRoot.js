@@ -9,18 +9,28 @@
  * 2，commit阶段：进行DOM更新创建阶段，此阶段不能暂停，要一气呵成。
  */
 
-import { TAG_ROOT, ELEMENT_TEXT, TAG_TEXT, TAG_HOST, PLACEMENT } from './constants';
+import { TAG_ROOT, ELEMENT_TEXT, TAG_TEXT, TAG_HOST, PLACEMENT, DELETION, UPDATE } from './constants';
 import { setProps } from './utils';
 
 // 下一个工作单元
 let nextUnitOfWork = null;
-// RootFiber应用的根
+// 正在渲染的根Root Fiber
 let workInProgressRoot = null;
+// 渲染成功后，当前根Root Fiber（表示最近一次（最新）渲染成功的根Root Fiber）
+let currentRoot = null;
+// 删除的节点我们并不放在effect list里，所以需要单独记录并执行
+let deletions = []
 
 // {tag: TAG_ROOT, stateNode: container, props: {children: [element]}} 
 export function scheduleRoot(rootFiber) {
-  workInProgressRoot = rootFiber;
-  nextUnitOfWork = rootFiber;
+  // 如果currentRoot有值，说明至少渲染过一次了，否则就是第一次渲染
+  if (currentRoot) {
+    rootFiber.alternate = currentRoot;
+    workInProgressRoot = rootFiber;
+  } else {
+    workInProgressRoot = rootFiber;
+  }
+  nextUnitOfWork = workInProgressRoot;
 }
 
 // 循环执行工作
@@ -228,20 +238,36 @@ function completeUnitOfWork(currentFiber) {
 
 // 将虚拟DOM渲染到页面上
 function commitRoot() {
+  // 执行effect list之前先把该删除的元素删除
+  deletions.forEach(commitWork);
   let currentFiber = workInProgressRoot.firstEffect;
   while (currentFiber) {
     commitWork(currentFiber);
     currentFiber = currentFiber.nextEffect;
   }
+  // 提交之后要清空deletions数组
+  deletions.length = 0;
+  currentRoot = workInProgressRoot;
   workInProgressRoot = null;
 }
 
 function commitWork(currentFiber) {
   if (!currentFiber) return;
   let returnFiber = currentFiber.return;
-  let returnDOM = returnFiber.stateNode;
-  if (currentFiber.effectTag === PLACEMENT && currentFiber.stateNode && returnDOM) {
-    returnDOM.appendChild(currentFiber.stateNode);
+  let domReturn = returnFiber.stateNode;
+  if (currentFiber.effectTag === PLACEMENT && currentFiber.stateNode) { // 新增节点点
+    domReturn.appendChild(currentFiber.stateNode);
+  } else if (currentFiber.effectTag === DELETION) { // 删除节点
+    domReturn.removeChild(currentFiber.stateNode);
+  } else if (currentFiber.effectTag === UPDATE) {
+    if (currentFiber.type === ELEMENT_TEXT) {
+      // 如果上一个节点的text不等于当前节点text，则去更新文本节点
+      if (currentFiber.alternate.props.text !== currentFiber.props.text) {
+        currentFiber.stateNode.textContent = currentFiber.props.text;
+      }
+    } else {
+      updateDOM(currentFiber.stateNode, currentFiber.alternate.props, currentFiber.props);
+    }
   }
   currentFiber.effectTag = null;
 }
